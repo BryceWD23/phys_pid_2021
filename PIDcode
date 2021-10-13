@@ -1,0 +1,66 @@
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+OneWire oneWire(13);
+DallasTemperature sensors(&oneWire); 
+
+
+int peltierPin = 5;
+float tempCelsius;
+float tempFahrenheit;
+
+double kp = 3;
+double ki = 1;
+double kd = 1;
+ 
+double error;
+double lastError = 0;
+double input, output, setPoint;
+double totError = 0;
+double rateError = 0;
+ 
+void setup(){
+        setPoint = 85;
+        pinMode(peltierPin, OUTPUT);
+
+        Serial.begin(9600);
+        sensors.begin();
+           
+}    
+
+void loop()
+{
+  sensors.requestTemperatures();  
+  tempCelsius = sensors.getTempCByIndex(0); 
+  tempFahrenheit = tempCelsius * 9 / 5 + 32;
+
+  Serial.println();
+  Serial.print("Temperature: ");
+  Serial.print(tempCelsius);
+  Serial.print("°C");
+  Serial.print("  ~  ");
+  Serial.print(tempFahrenheit); 
+  Serial.println("°F");
+
+  delay(500);
+
+  error = setPoint - tempFahrenheit;
+  Serial.println();
+  Serial.print("Error: ");
+  Serial.print(error);
+  output = computePID(error);
+  Serial.print("  Output: ");
+  Serial.print(output);
+  delay(100);
+  analogWrite(peltierPin, output);
+
+}
+ 
+double computePID(double error){     
+  
+  totError = totError + error;
+  rateError = error - lastError;
+  lastError = error;
+
+        return kp * error + ki * totError + kd * rateError;
+}
